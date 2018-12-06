@@ -18,20 +18,58 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 
 class ConcertTest extends TestCase
 {
+    
     use DatabaseMigrations;
     
     /** @test */
     function canGetFormattedDate(){
         
-        $concert = factory(Concert::class)->create([
+        $concert = factory(Concert::class)->make([
                                                "date" => Carbon::parse("2016-12-01 8:00pm")
                                            ]);
         
         
-        $date = $concert->formattedDate;
-        
-        $this->assertEquals("December 1, 2016", $date);
+        $this->assertEquals("December 1, 2016", $concert->formattedDate);
         
     }
+    
+    /** @test */
+    function canGetFormattedStartTime(){
+        $concert = factory(Concert::class)->make([
+                                                       "date" => Carbon::parse("2016-12-01 17:00:00")
+                                                   ]);
+    
+    
+        $this->assertEquals("5:00pm", $concert->formattedStartTime);
+    }
+    
+    /** @test */
+    function canGetTicketPriceInDollars(){
+        $concert = factory(Concert::class)->make([
+                                                       "ticketPrice" => 6750
+                                                   ]);
+    
+        $this->assertEquals("67.50" , $concert->ticketPriceInDollars);
+        
+    }
+    
+    /** @test */
+    function concertsWithPublishedDateArePublished(){
+        
+        $publishedA = factory(Concert::class)->create(["published_at" => Carbon::parse("-1 week")]);
+        $publishedB = factory(Concert::class)->create(["published_at" => Carbon::parse("-1 week")]);
+        $unPublished = factory(Concert::class)->create(["published_at" => null]);
+        
+        $publishedConcerts = Concert::published()->get();
+        
+        $this->assertTrue($publishedConcerts->contains($publishedA));
+        $this->assertTrue($publishedConcerts->contains($publishedB));
+        $this->assertFalse($publishedConcerts->contains($unPublished));
+    }
+    ///** @test */
+    //function myTest(){
+    //    $this->assertEquals(0,1);
+    //}
+    
 
 }

@@ -17,13 +17,13 @@ class ViewConcertListingTest extends TestCase
     use DatabaseMigrations;
     
     /** @test */
-    function userCanViewConcertListing()
+    function userCanViewAPublishedConcertListing()
     {
         // Arrange
         
         //Create Concert
         
-        $concert = Concert::create([
+        $concert = factory(Concert::class)->states("published")->create([
             
             "title" => "The Red Chord",
             "subtitle" => "with Animosity and Lethargy",
@@ -34,7 +34,7 @@ class ViewConcertListingTest extends TestCase
             "city" => "Laraville",
             "state" => "ON",
             "zip" => "17916",
-            "additionalInformation" => "For tickets, calls (555) 555-5555."
+            "additionalInformation" => "For tickets, calls (555) 555-5555.",
                                    ]);
         
         // Act
@@ -60,4 +60,14 @@ class ViewConcertListingTest extends TestCase
         
     }
     
+    /** @test */
+    function userCannotViewUnpublishedConcert(){
+        
+        $concert = factory(Concert::class)->states('unPublished')->create();
+    
+        $response = $this->get("/concerts/".$concert->id);
+        
+        $response->assertStatus(404);
+        
+    }
 }
