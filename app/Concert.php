@@ -30,4 +30,8 @@ class Concert extends Model
     public function getTicketPriceInDollarsAttribute(){
         return number_format($this->ticketPrice/100,2);
     }
+    
+    public function orders(){
+        return $this->HasMany(Order::class);
+    }
 }
