@@ -31,12 +31,9 @@ class ConcertOrdersController extends Controller
         ]);
         
         try{
-    
             
-    
             $this->paymentGateway->charge( request("ticketQuantity") * $concert->ticketPrice, request("paymentToken"));
-    
-    
+            
             $order = $concert->orderTickets(request("email"), request("ticketQuantity"));
     
             return response()->json([], 201);
@@ -44,7 +41,6 @@ class ConcertOrdersController extends Controller
         catch(PaymentFailedException $e){
             return response()->json( [], 422);
         }
-    
-    
+        
     }
 }
