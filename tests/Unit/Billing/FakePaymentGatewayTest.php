@@ -1,17 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: host
- * Date: 07/12/18
- * Time: 2:23 PM
- */
 
 namespace Tests\Unit\Billing;
 
 use App\Billing\FakePaymentGateway;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
+use App\Billing\PaymentFailedException;
 use Tests\TestCase;
 
 class FakePaymentGatewayTest extends TestCase
@@ -23,7 +15,22 @@ class FakePaymentGatewayTest extends TestCase
           $paymentGateway->charge(2500, $paymentGateway->getValidTestToken());
           
           $this->assertEquals(2500,$paymentGateway->totalCharges());
-          
     }
     
+    /** @test */
+    function chargeWithInvalidPaymentTokenFail(){
+        
+        try
+        {
+            $paymentGateway = new FakePaymentGateway;
+            $paymentGateway->charge(2500, 'invalid-payment-token');
+        }
+        catch(PaymentFailedException $e)
+        {
+            $this->assertTrue(true);
+            return;
+        }
+    
+        $this->fail();
+    }
 }
