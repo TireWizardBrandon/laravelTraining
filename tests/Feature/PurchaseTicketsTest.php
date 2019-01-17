@@ -45,10 +45,8 @@ class PurchaseTicketsTest extends TestCase{
     function customerCanPurchaseTicketToPublishedConcert(){
         
         
-        $concert = factory(Concert::class)->states('published')->create([
-            "ticketPrice" => 3250
-                                                   ]);
-    
+        $concert = factory(Concert::class)->states('published')->create(["ticketPrice" => 3250 ])->addTickets(3);
+        
         $response = $this->orderTickets($concert, [
             'email' =>'john@example.com',
             "ticketQuantity" => 3,
@@ -58,19 +56,18 @@ class PurchaseTicketsTest extends TestCase{
         $response->assertStatus(201);
         
         $this->assertEquals(9750,$this->paymentGateway->totalCharges());
+        
+        
+        $this->assertTrue($concert->hasOrderFor("john@example.com"));
     
-        $order = $concert->orders()->where('email', "john@example.com")->first();
-        $this->assertNotNull($order);
-    
-    
-        $this->assertEquals(3,$order->tickets()->count());
+        $this->assertEquals(3,$concert->ordersFor("john@example.com")->first()->ticketQuantity());
     }
     
     /** @test */
     function cantPurchaseTicketForUnpublishedConcert(){
         
         
-        $concert = factory(Concert::class)->states('unPublished')->create();
+        $concert = factory(Concert::class)->states('unPublished')->create()->addTickets(3);
     
         $response = $this->orderTickets($concert, [
             'email' =>'john@example.com',
@@ -80,7 +77,7 @@ class PurchaseTicketsTest extends TestCase{
         
         $response->assertStatus(404);
         
-        $this->assertEquals(0, $concert->orders()->count());
+        $this->assertFalse($concert->hasOrderFor("john@example.com"));
     
         $this->assertEquals(0,$this->paymentGateway->totalCharges());
     }
@@ -103,9 +100,7 @@ class PurchaseTicketsTest extends TestCase{
     /** @test */
     function cannotPurchaseMoreTicketsThanRemain(){
     
-        $concert = factory(Concert::class)->states('published')->create();
-        
-        $concert->addTickets(50);
+        $concert = factory(Concert::class)->states('published')->create()->addTickets(50);
     
         $response = $this->orderTickets($concert, [
             "email" => "john@example.com",
@@ -115,8 +110,7 @@ class PurchaseTicketsTest extends TestCase{
     
         $response->assertStatus(422);
         
-        $order = $concert->orders()->where("email", "john@example.com")->first();
-        $this->assertNull($order);
+        $this->assertFalse($concert->hasOrderFor("john@example.com"));
         
         $this->assertEquals(0, $this->paymentGateway->totalCharges());
         
@@ -126,9 +120,7 @@ class PurchaseTicketsTest extends TestCase{
     
     /** @test */
     function emailIsValid(){
-        $concert = factory(Concert::class)->states('published')->create();
-        
-        $concert->addTickets(3);
+        $concert = factory(Concert::class)->states('published')->create()->addTickets(3);
     
         $response = $this->orderTickets($concert, [
             "email" => "invalid-email-address",
@@ -186,10 +178,8 @@ class PurchaseTicketsTest extends TestCase{
     /** @test */
     function anOrderIsNotMadeIfPaymentFailed(){
         
-        $concert = factory(Concert::class)->states('published')->create([
-                                                       "ticketPrice" => 3250
-                                                   ]);
-    
+        $concert = factory(Concert::class)->states('published')->create(["ticketPrice" => 3250 ])->addTickets(3);
+        
         $response = $this->orderTickets($concert, [
             'email' =>'john@example.com',
             "ticketQuantity" => 3,
@@ -198,8 +188,6 @@ class PurchaseTicketsTest extends TestCase{
         
         $response->assertStatus(422);
     
-        $order = $concert->orders()->where('email', "john@example.com")->first();
-        
-        $this->assertNull($order);
+        $this->assertFalse($concert->hasOrderFor("john@example.com"));
     }
 }
