@@ -1,22 +1,13 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: host
- * Date: 06/12/18
- * Time: 2:13 PM
- */
 
 namespace Tests\Feature;
 
 use App\Billing\PaymentGateway;
 use App\Concert;
-use Carbon\Carbon;
 use Tests\TestCase;
 use App\Billing\FakePaymentGateway;
 
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
 
 class PurchaseTicketsTest extends TestCase{
 
@@ -27,23 +18,19 @@ class PurchaseTicketsTest extends TestCase{
         
         $this->paymentGateway = new FakePaymentGateway;
         $this->app->instance(PaymentGateway::class, $this->paymentGateway);
-        
     }
     
     private function orderTickets($concert, $params){
-        
         return $this->json('POST', "/concerts/{$concert->id}/orders", $params );
     }
     
     private function assertValidationError($response, $field){
         $response->assertStatus(422);
-    
         $this->assertArrayHasKey($field, $response->decodeResponseJson()["errors"]);
     }
     
     /** @test */
     function customerCanPurchaseTicketToPublishedConcert(){
-        
         
         $concert = factory(Concert::class)->states('published')->create(["ticketPrice" => 3250 ])->addTickets(3);
         
@@ -55,11 +42,14 @@ class PurchaseTicketsTest extends TestCase{
     
         $response->assertStatus(201);
         
+        $response->assertJson([[
+            "email" => "john@example.com",
+            "ticketQuantity" => 3,
+            "amount" => 9750,
+        ],["email" => "jane@example.com"],["email" => "bob@example.com"]]);
+        
         $this->assertEquals(9750,$this->paymentGateway->totalCharges());
-        
-        
         $this->assertTrue($concert->hasOrderFor("john@example.com"));
-    
         $this->assertEquals(3,$concert->ordersFor("john@example.com")->first()->ticketQuantity());
     }
     
@@ -76,9 +66,7 @@ class PurchaseTicketsTest extends TestCase{
         ]);
         
         $response->assertStatus(404);
-        
         $this->assertFalse($concert->hasOrderFor("john@example.com"));
-    
         $this->assertEquals(0,$this->paymentGateway->totalCharges());
     }
     
@@ -91,7 +79,6 @@ class PurchaseTicketsTest extends TestCase{
             "ticketQuantity" => 3,
             "paymentToken" => $this->paymentGateway->getValidTestToken(),
         ]);
-        
         
         $this->assertValidationError($response,"email");
         
@@ -109,11 +96,8 @@ class PurchaseTicketsTest extends TestCase{
         ]);
     
         $response->assertStatus(422);
-        
         $this->assertFalse($concert->hasOrderFor("john@example.com"));
-        
         $this->assertEquals(0, $this->paymentGateway->totalCharges());
-        
         $this->assertEquals(50, $concert->ticketsRemaining());
     }
     
@@ -129,7 +113,6 @@ class PurchaseTicketsTest extends TestCase{
         ]);
     
         $this->assertValidationError($response,"email");
-
     }
     
     /** @test */
@@ -143,7 +126,6 @@ class PurchaseTicketsTest extends TestCase{
         ]);
     
         $this->assertValidationError($response,"ticketQuantity");
-        
     }
     
     /** @test */
@@ -158,7 +140,6 @@ class PurchaseTicketsTest extends TestCase{
         ]);
     
         $this->assertValidationError($response,"ticketQuantity");
-       
     }
     
     /** @test */
@@ -172,7 +153,6 @@ class PurchaseTicketsTest extends TestCase{
         ]);
     
         $this->assertValidationError($response,"paymentToken");
-        
     }
     
     /** @test */
@@ -187,7 +167,6 @@ class PurchaseTicketsTest extends TestCase{
         ]);
         
         $response->assertStatus(422);
-    
         $this->assertFalse($concert->hasOrderFor("john@example.com"));
     }
 }
